@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Baltic Grocery Stores Map</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Leaflet CSS -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    crossorigin=""
+  />
+
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+    }
+    #map {
+      width: 100%;
+      height: 100%;
+    }
+  </style>
+</head>
+<body>
+<div id="map"></div>
+
+<!-- Leaflet JS -->
+<script
+  src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+  integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+  crossorigin="">
+</script>
+
+<script>
+  // 1. Create map centered roughly on the Baltics
+  var map = L.map('map').setView([56.9, 24.6], 6);
+
+  // 2. Add OSM base layer
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '&copy; OpenStreetMap contributors'
+  }).addTo(map);
+
+  // 3. Load our grocery stores GeoJSON
+  fetch('shops.geojson')
+    .then(function(response) { return response.json(); })
+    .then(function(data) {
+      var groceryLayer = L.geoJSON(data, {
+        pointToLayer: function(feature, latlng) {
+          return L.circleMarker(latlng, {
+            radius: 4
+          });
+        },
+        onEachFeature: function(feature, layer) {
+          var props = feature.properties || {};
+          var name = props.name || 'Unnamed store';
+          var shopType = props.shop || 'shop';
+          var brand = props.brand || '';
+
+          var html = '<strong>' + name + '</strong><br>' +
+                     'Type: ' + shopType;
+          if (brand) {
+            html += '<br>Brand: ' + brand;
+          }
+
+          layer.bindPopup(html);
+        }
+      }).addTo(map);
+
+      // 4. Fit map to all points
+      try {
+        map.fitBounds(groceryLayer.getBounds());
+      } catch (e) {
+        console.warn('No features to fit bounds:', e);
+      }
+    })
+    .catch(function(err) {
+      console.error('Error loading shops.geojson', err);
+    });
+</script>
+</body>
+</html>
