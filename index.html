@@ -48,27 +48,51 @@
   fetch('shops.geojson')
     .then(function(response) { return response.json(); })
     .then(function(data) {
-      var groceryLayer = L.geoJSON(data, {
-        pointToLayer: function(feature, latlng) {
-          return L.circleMarker(latlng, {
-            radius: 4
-          });
-        },
-        onEachFeature: function(feature, layer) {
-          var props = feature.properties || {};
-          var name = props.name || 'Unnamed store';
-          var shopType = props.shop || 'shop';
-          var brand = props.brand || '';
+     var groceryLayer = L.geoJSON(data, {
+  pointToLayer: function(feature, latlng) {
+    return L.circleMarker(latlng, { radius: 4 });
+  },
+  onEachFeature: function(feature, layer) {
+    var props = feature.properties || {};
 
-          var html = '<strong>' + name + '</strong><br>' +
-                     'Type: ' + shopType;
-          if (brand) {
-            html += '<br>Brand: ' + brand;
-          }
+    var name = props.name || 'Unnamed store';
+    var shopType = props.shop || 'shop';
+    var brand = props.brand || '';
 
-          layer.bindPopup(html);
-        }
-      }).addTo(map);
+    // Read address fields from OSM tags
+    var street = props["addr:street"] || '';
+    var housenumber = props["addr:housenumber"] || '';
+    var city = props["addr:city"] || '';
+    var postcode = props["addr:postcode"] || '';
+
+    // Build a single address line
+    var addressParts = [];
+
+    if (street || housenumber) {
+      addressParts.push((street + ' ' + housenumber).trim());
+    }
+    if (postcode || city) {
+      addressParts.push((postcode + ' ' + city).trim());
+    }
+
+    var address = addressParts.join(', ');
+    if (!address) {
+      address = 'Address not available';
+    }
+
+    // Build popup HTML
+    var html = '<strong>' + name + '</strong><br>' +
+               'Type: ' + shopType;
+
+    if (brand) {
+      html += '<br>Brand: ' + brand;
+    }
+
+    html += '<br>Address: ' + address;
+
+    layer.bindPopup(html);
+  }
+}).addTo(map);
 
       // 4. Fit map to all points
       try {
